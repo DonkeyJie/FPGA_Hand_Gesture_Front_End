@@ -1,0 +1,116 @@
+/*-------------------------------------------------------------------------
+This confidential and proprietary software may be only used as authorized
+by a licensing agreement from CrazyBingo.
+(C) COPYRIGHT 2012 CrazyBingo. ALL RIGHTS RESERVED
+Filename			:		VIP_RGB888_YCbCr444.v
+Author				:		CrazyBingo
+Data				:		2013-05-14 15:15
+Version				:		1.0
+Description			:		Convert the RGB888 format to YCbCr444 format.
+Modification History	:
+Data			By			Version			Change Description
+===========================================================================
+13/05/14		CrazyBingo	1.0				Original
+14/03/16		CrazyBingo	2.0				Modification
+--------------------------------------------------------------------------*/
+
+`timescale 1ns/1ns
+module VIP_RGB888_YCbCr444
+(
+	//global clock
+	input				clk,  				//cmos video pixel clock
+	input				rst_n,				//global reset
+
+	//CMOS rgb888 data input
+	input				per_frame_vsync,	//Prepared Image data vsync valid signal
+	input				per_frame_href,		//Prepared Image data href vaild  signal
+	input				per_frame_clken,	//Prepared Image data output/capture enable clock	
+	input		[7:0]	per_img_red,		//Prepared Image red data to be processed
+	input		[7:0]	per_img_green,		//Prepared Image green data to be processed
+	input		[7:0]	per_img_blue,		//Prepared Image blue data to be processed
+	
+	//CMOS YCbCr444 data output
+	output				post_frame_vsync,	//Processed Image data vsync valid signal
+	output				post_frame_href,	//Processed Image data href vaild  signal
+	output				post_frame_clken,	//Processed Image data output/capture enable clock	
+	output		[7:0]	post_img_Y			//Processed Image brightness output
+//	output		[7:0]	post_img_Cb,		//Processed Image blue shading output
+//	output		[7:0]	post_img_Cr			//Processed Image red shading	 output
+);
+
+//--------------------------------------------
+/*********************************************
+	Gray = R*0.299 + G*0.587 + B*0.114
+	Gray = (R*0.299 + G*0.587 + B*0.114)*8>>8
+	Gray = (R*77 + G*150 + B*29)>>8
+**********************************************/
+reg	[15:0]	img_red_r; 	
+reg	[15:0]	img_green_r; 
+reg	[15:0]	img_blue_r; 
+always@(posedge clk or negedge rst_n)
+begin
+	if(!rst_n)
+		begin
+		img_red_r <= 0;
+		img_green_r <= 0;
+		img_blue_r <= 0;
+		end
+	else if(per_frame_vsync & per_frame_href)
+		begin
+		if(per_frame_clken)
+			begin
+			img_red_r <= per_img_red * 8'd77;
+			img_green_r <= per_img_green * 8'd150;
+			img_blue_r <= per_img_blue * 8'd29;
+			end
+		else
+			begin
+			img_red_r <= img_red_r;
+			img_green_r <= img_green_r;
+			img_blue_r <= img_blue_r;
+			end
+		end
+	else
+		begin
+		img_red_r <= 0;
+		img_green_r <= 0;
+		img_blue_r <= 0;
+		end
+end
+
+//--------------------------------------------
+reg	[15:0]	post_img_Y_r;
+always@(posedge clk or negedge rst_n)
+begin
+	if(!rst_n)
+		post_img_Y_r  <= 0;
+	else
+		post_img_Y_r <= img_red_r + img_green_r + img_blue_r;
+end
+assign	post_img_Y = post_img_Y_r[15:8];
+
+//------------------------------------------
+//lag 2 clocks signal sync  
+reg	post_frame_vsync_r1, post_frame_vsync_r0;
+reg	post_frame_href_r1, post_frame_href_r0;	
+reg	post_frame_clken_r1, post_frame_clken_r0;
+always@(posedge clk or negedge rst_n)
+begin
+	if(!rst_n)
+		begin
+		{post_frame_vsync_r1, post_frame_vsync_r0} <= 0;
+		{post_frame_href_r1, post_frame_href_r0} <= 0;
+		{post_frame_clken_r1, post_frame_href_r0} <= 0;
+		end
+	else
+		begin
+		{post_frame_vsync_r1, post_frame_vsync_r0} <= {post_frame_vsync_r0, per_frame_vsync};
+		{post_frame_href_r1, post_frame_href_r0} <= {post_frame_href_r0, per_frame_href};
+		{post_frame_clken_r1, post_frame_clken_r0} <= {post_frame_clken_r0, per_frame_clken};
+		end
+end
+assign	post_frame_vsync = post_frame_vsync_r1;
+assign	post_frame_href = post_frame_href_r1;
+assign	post_frame_clken = post_frame_clken_r1;
+
+endmodule

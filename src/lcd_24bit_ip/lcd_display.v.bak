@@ -1,0 +1,99 @@
+/*-------------------------------------------------------------------------
+This confidential and proprietary software may be only used as authorized
+by a licensing agreement from CrazyBingo.
+(C) COPYRIGHT 2012 CrazyBingo. ALL RIGHTS RESERVED
+Filename			:		lcd_display.v
+Author				:		CrazyBingo
+Data				:		2012-02-18 00:51
+Version				:		1.0
+Description			:		test of de2 vga module.
+Modification History	:
+Data			By			Version			Change Description
+===========================================================================
+12/02/18		CrazyBingo	1.0				Original
+13/04/18		CrazyBingo	2.0				Modification the parameter.
+--------------------------------------------------------------------------*/
+module lcd_display
+(
+	input	 			clk,		//system clock
+	input				rst_n,		//sync clock
+	
+	input		[10:0]	lcd_xpos,	//lcd horizontal coordinate
+	input		[10:0]	lcd_ypos,	//lcd vertical coordinate
+	output	reg	[15:0]	lcd_data	//lcd data
+);
+
+//RGB--5|6|5
+//define colors RGB--5|6|5
+localparam RED		=	16'hF800;   /*111110,000000,000000	F800 */
+localparam GREEN	=	16'h07E0;   /*000000,111111,000000	07E0 */
+localparam BLUE  	=	16'h001F;   /*000000,000000,111110	001F */ 
+localparam WHITE 	=	16'hFFFF;   /*111110,111111,111110	FFFF */
+localparam BLACK 	=	16'h0000;   /*000000,000000,000000	0000 */
+localparam YELLOW	=	16'hFFE0;   /*111110,111111,000000	FFE0 */
+localparam CYAN  	=	16'hF81F;   /*111110,000000,111110	F81F */
+localparam ROYAL 	=	16'h07FF;   /*000000,111111,111110	07FF */
+
+
+//-----------------------------------
+//localparam	H_DISP = 11'd1440;
+//localparam	V_DISP = 10'd900;
+//localparam	H_DISP = 11'd1024;
+//localparam	V_DISP = 11'd768;
+localparam	H_DISP = 11'd720;
+localparam	V_DISP = 11'd576;
+always@(posedge clk or negedge rst_n)
+begin
+	if(!rst_n)
+		lcd_data <= 16'h0;
+	else
+//	Color test
+//		lcd_data <= RED;
+//		lcd_data <= GREEN;
+//		lcd_data <= BLUE;
+//		lcd_data <= WHITE;
+//	Image test
+		lcd_data <= lcd_xpos * lcd_ypos;
+//	Gray test
+//		lcd_data <= {lcd_xpos[9:5],lcd_xpos[9:4],lcd_xpos[9:5]};
+//		lcd_data <= {lcd_xpos[9:5]};
+
+//	H_DISP test		
+//		if	(lcd_xpos >= 0 && lcd_xpos < (H_DISP/8)*1)
+//			lcd_data <= RED;
+//		else if(lcd_xpos >= (H_DISP/8)*1 && lcd_xpos < (H_DISP/8)*2)
+//			lcd_data <= GREEN;
+//		else if(lcd_xpos >= (H_DISP/8)*2 && lcd_xpos < (H_DISP/8)*3)
+//			lcd_data <= BLUE;
+//		else if(lcd_xpos >= (H_DISP/8)*3 && lcd_xpos < (H_DISP/8)*4)
+//			lcd_data <= WHITE;
+//		else if(lcd_xpos >= (H_DISP/8)*4 && lcd_xpos < (H_DISP/8)*5)
+//			lcd_data <= BLACK;
+//		else if(lcd_xpos >= (H_DISP/8)*5 && lcd_xpos < (H_DISP/8)*6)
+//			lcd_data <= YELLOW;
+//		else if(lcd_xpos >= (H_DISP/8)*6 && lcd_xpos < (H_DISP/8)*7)
+//			lcd_data <= CYAN;
+//		else// if(lcd_xpos >= (H_DISP/8)*7 && lcd_xpos < (H_DISP/8)*8)
+//			lcd_data <= ROYAL;
+
+//	V_DISP test
+//		if	(lcd_ypos >= 0 && lcd_ypos < (V_DISP/8)*1)
+//			lcd_data <= RED;
+//		else if(lcd_ypos >= (V_DISP/8)*1 && lcd_ypos < (V_DISP/8)*2)
+//			lcd_data <= GREEN;
+//		else if(lcd_ypos >= (V_DISP/8)*2 && lcd_ypos < (V_DISP/8)*3)
+//			lcd_data <= BLUE;
+//		else if(lcd_ypos >= (V_DISP/8)*3 && lcd_ypos < (V_DISP/8)*4)
+//			lcd_data <= WHITE;
+//		else if(lcd_ypos >= (V_DISP/8)*4 && lcd_ypos < (V_DISP/8)*5)
+//			lcd_data <= BLACK;
+//		else if(lcd_ypos >= (V_DISP/8)*5 && lcd_ypos < (V_DISP/8)*6)
+//			lcd_data <= YELLOW;
+//		else if(lcd_ypos >= (V_DISP/8)*6 && lcd_ypos < (V_DISP/8)*7)
+//			lcd_data <= CYAN;
+//		else// if(lcd_ypos >= (V_DISP/8)*7 && lcd_ypos < (V_DISP/8)*8)
+//			lcd_data <= ROYAL;
+end
+		
+
+endmodule

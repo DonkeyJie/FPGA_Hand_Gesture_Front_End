@@ -1,0 +1,86 @@
+/*-----------------------------------------------------------------------
+								 \\\|///
+							   \\  - -  //
+								(  @ @  )  
++-----------------------------oOOo-(_)-oOOo-----------------------------+
+CONFIDENTIAL IN CONFIDENCE
+This confidential and proprietary software may be only used as authorized
+by a licensing agreement from CrazyBingo (Thereturnofbingo).
+In the event of publication, the following notice is applicable:
+Copyright (C) 2012-20xx CrazyBingo Corporation
+The entire notice above must be reproduced on all authorized copies.
+Author				:		CrazyBingo
+Technology blogs 	: 		http://blog.chinaaet.com/crazybingo
+Email Address 		: 		thereturnofbingo@gmail.com
+Filename			:		LED_Display_Design.v
+Data				:		2013-10-22
+Description			:		Basic LED Display design.
+Modification History	:
+Data			By			Version			Change Description
+=========================================================================
+13/10/22		CrazyBingo	1.0				Original
+13/10/24		CrazyBingo	1.1				Add breathe display RTL
+-------------------------------------------------------------------------
+|                                     Oooo								|
++-------------------------------oooO--(   )-----------------------------+
+                               (   )   ) /
+                                \ (   (_/
+                                 \_)
+-----------------------------------------------------------------------*/
+
+`timescale 1ns/1ns
+module LED_Display_Design
+(
+	//globol clock
+	input				clk,
+	input				rst_n,
+	
+	//user interface
+//	output		[7:0]	led_data,
+
+	//74595 led interface
+	output				led595_dout,	//74hc595 serial data input	
+	output				led595_clk,		//74hc595 shift clock (rising edge)
+	output				led595_latch	//74hc595 latch clock (risign edge)
+);
+
+
+//----------------------------
+//led display for water
+wire	[7:0]	led_data;
+led_water_display
+#(
+	.LED_WIDTH	(8)
+)
+u_led_water_display
+(
+	//global clock
+	.clk		(clk),
+	.rst_n		(rst_n),
+
+	//user led output
+	.led_data	(led_data)
+);
+
+
+//---------------------------
+//The driver of 74HC595
+led_74595_driver	u_led_74595_driver
+(
+	//global clock
+	.clk				(clk),
+	.rst_n				(rst_n),
+
+	//74hc595 interface
+	.led595_dout		(led595_dout),	//74hc595 serial data input	
+	.led595_clk			(led595_clk),	//74hc595 shift clock (rising edge)
+	.led595_latch		(led595_latch),	//74hc595 latch clock (risign edge)
+
+	//user interface
+	.led_data			(led_data)		//led data input	
+);
+
+
+endmodule
+
+

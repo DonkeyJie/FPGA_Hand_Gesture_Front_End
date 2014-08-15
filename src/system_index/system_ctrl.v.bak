@@ -1,0 +1,114 @@
+/*-------------------------------------------------------------------------
+CONFIDENTIAL IN CONFIDENCE
+This confidential and proprietary software may be only used as authorized
+by a licensing agreement from CrazyBingo (Thereturnofbingo).
+In the event of publication, the following notice is applicable:
+Copyright (C) 2011-2012 CrazyBingo Corporation
+The entire notice above must be reproduced on all authorized copies.
+Author				:		CrazyBingo
+Technology blogs 	: 		http://blog.chinaaet.com/crazybingo
+							http://www.cnblogs.com/crazybingo
+Eamil Address 		: 		thereturnofbingo@gmail.com
+Data				:		2011-6-25
+Version				:		1.0
+Description			:		sync clock.
+Modification History	:
+Data			By			Version			Change Description
+===========================================================================
+11/06/25		CrazyBingo	1.0				Original
+12/03/12		CrazyBingo	1.1				Modification
+12/06/01		CrazyBingo	1.4				Modification
+12/11/18		CrazyBingo	2.0				Modification
+--------------------------------------------------------------------------*/
+/***************************************************************************
+//----------------------------------
+wire	sys_rst_n;
+system_ctrl	u_system_ctrl
+(
+	.clk			(clk),			//50MHz
+	.rst_n			(rst_n),		//global reset
+
+	.sys_rst_n		(sys_rst_n),	//system reset
+	.clk_ref			(clk_ref)		//clock output	
+);
+***************************************************************************/
+
+`timescale 1 ns / 1 ns
+module system_ctrl
+(
+	input 		clk,		//50MHz
+	input 		rst_n,		//global reset
+
+	output 		sys_rst_n,	//system reset
+	output 		clk_ref		//clock output	
+);
+
+//----------------------------------------------
+//rst_n synchronism, is controlled by the input clk
+reg     rst_nr1,rst_nr2;
+always @(posedge clk or negedge rst_n)
+begin
+	if(!rst_n)
+		begin
+		rst_nr1 <= 1'b0;
+		rst_nr2 <= 1'b0;
+		end
+	else
+		begin
+		rst_nr1 <= 1'b1;
+		rst_nr2 <= rst_nr1;
+		end
+end
+
+//----------------------------------
+//component instantiation for system_delay
+wire	delay_done;
+system_delay
+#(
+	.DELAY_TOP	(24'd100_0000)	//50ms
+)
+u_system_delay
+(
+	.clk		(clk),
+	.rst_n		(rst_nr2),
+	.delay_done	(delay_done)
+);
+wire	sys_rst_n = ~rst_nr2 | ~delay_done;	//active High
+
+endmodule
+
+
+/*****************************************************
+	system delay for steady power module
+*****************************************************/
+module system_delay
+#(
+	parameter	DELAY_TOP = 24'd100_0000	//50ms
+)
+(
+	input		clk,		//50MHz
+	input		rst_n,
+	output	reg	delay_done	//system delay done flag
+);
+
+//------------------------------------------
+// Delay 100ms for steady state
+reg	[23:0] cnt;
+always@(posedge clk or negedge rst_n)
+begin
+	if(!rst_n)
+		begin
+		cnt <= 0;
+		delay_done <= 0;
+		end
+	else
+		begin
+		if(cnt < DELAY_TOP - 1'b1) //1ms
+			cnt <= cnt + 1'b1;
+		else
+			cnt <= cnt;
+		delay_done = (cnt == DELAY_TOP - 1'b1)? 1'b1 : 1'b0;
+		end
+end
+
+endmodule

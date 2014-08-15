@@ -1,0 +1,153 @@
+/*-----------------------------------------------------------------------
+								 \\\|///
+							   \\  - -  //
+								(  @ @  )
++-----------------------------oOOo-(_)-oOOo-----------------------------+
+CONFIDENTIAL IN CONFIDENCE
+This confidential and proprietary software may be only used as authorized
+by a licensing agreement from CrazyBingo (Thereturnofbingo).
+In the event of publication, the following notice is applicable:
+Copyright (C) 2013-20xx CrazyBingo Corporation
+The entire notice above must be reproduced on all authorized copies.
+Author				:		CrazyBingo
+Technology blogs 	: 		http://blog.chinaaet.com/crazybingo
+Email Address 		: 		thereturnofbingo@gmail.com
+Filename			:		Video_Image_Processor.v
+Data				:		2013-05-26
+Description			:		Video Image processor module.
+Modification History	:
+Data			By			Version			Change Description
+=========================================================================
+13/05/25		CrazyBingo	1.0				Original
+-------------------------------------------------------------------------
+|                                     Oooo								|
++-------------------------------oooO--(   )-----------------------------+
+                               (   )   ) /
+                                \ (   (_/
+                                 \_)
+-----------------------------------------------------------------------*/   
+
+`timescale 1ns/1ns
+module Video_Image_Processor
+(
+	//global clock
+	input				clk,  		//cmos pclk
+	input				rst_n,		//global reset
+
+	//Image data prepred to be processd
+	input				per_frame_vsync,	//Prepared Image data vsync valid signal
+	input				per_frame_href,		//Prepared Image data href vaild  signal
+	input				per_frame_clken,	//Prepared Image data output/capture enable clock
+	input		[7:0]	per_img_red,		//Prepared Image red data to be processed
+	input		[7:0]	per_img_green,		//Prepared Image green data to be processed
+	input		[7:0]	per_img_blue,		//Prepared Image blue data to be processed
+
+	//Image data has been processd
+	output				post_frame_vsync,	//Processed Image data vsync valid signal
+	output				post_frame_href,	//Processed Image data href vaild  signal
+	output				post_frame_clken,	//Processed Image data output/capture enable clock
+	input		[7:0]	per_img_gray		//Prepared Image red data to be processed
+);
+
+
+//-------------------------------------
+//RGB Contrast and Brightness adjust.
+VIP_RGB888_YCbCr444	u_VIP_RGB888_YCbCr444
+(
+	//global clock
+	.clk				(clk),			//100MHz
+	.rst_n				(rst_n),		//system reset
+
+	//Image data prepred to be processd
+	.per_frame_vsync	(post_frame_vsync_r1),	//Prepared Image data vsync valid signal
+	.per_frame_href		(post_frame_href_r1),	//Prepared Image data href vaild  signal
+	.per_frame_clken	(post_frame_clken_r1),	//Prepared Image data output/capture enable clock
+	.per_img_red		(post_img_Radj1),		//Prepared Image red data input
+	.per_img_green		(post_img_Gadj1),		//Prepared Image green data input
+	.per_img_blue		(post_img_Badj1),		//Prepared Image blue data input
+	
+	//Image data has been processd
+	.post_frame_vsync	(post_frame_vsync_r2),	//Processed Image frame data valid signal
+	.post_frame_href	(post_frame_href_r2),	//Processed Image hsync data valid signal
+	.post_frame_clken	(post_frame_clken_r2),	//Processed Image data output/capture enable clock
+	.post_img_Y			(post_img_Y)			//Processed Image brightness output
+);
+
+//-------------------------------------
+//Detect the gray image's mean value.
+wire			post_Ymean_update;	//Processed Image mean brightness update	
+wire	[7:0]	post_img_Ymean;		//Processed Image mean brightness value
+VIP_Gray_Mean_Detector	u_VIP_Gray_Mean_Detector
+(
+	//global clock
+	.clk				(clk),			//100MHz
+	.rst_n				(rst_n),		//system reset
+
+	//Image data prepred to be processd
+	.per_frame_vsync	(post_frame_vsync_r2),	//Prepared Image data vsync valid signal
+	.per_frame_href		(post_frame_href_r2),	//Prepared Image data href vaild  signal
+	.per_frame_clken	(post_frame_clken_r2),	//Prepared Image data output/capture enable clock
+	.per_img_Y			(post_img_Y),			//Prepared Image brightness output
+
+	//Image data has been processd
+	.post_Ymean_update	(post_Ymean_update),	//Processed Image mean brightness update
+	.post_img_Ymean		(post_img_Ymean)		//Processed Image mean brightness value
+);
+
+//--------------------------------------
+//Bright Threshold adjust with key.
+wire	[7:0]	bright_value;
+VIP_Image_Bright_Adj	u_VIP_Image_Bright_Adj
+(
+	//global clock
+	.clk				(clk),  		//100MHz
+	.rst_n				(rst_n),		//global reset
+	
+	//user interface
+	.key_flag			(key_flag),			//key down flag
+	.key_value			(key_value),		//key control data
+	
+	.bright_value		(bright_value)		//Image brightness
+);
+
+//-------------------------------------
+//RGB Contrast and Brightness adjust.
+wire	[7:0]	post_img_Radj2;	//Red data
+wire	[7:0]	post_img_Gadj2;	//Green data
+wire	[7:0]	post_img_Badj2;	//Blue data
+VIP_RGB_Contrast_Brightness_Adj	
+#(
+	.CONTRAST_PARAM		(10'd384)			//enlarge 256, (0,1024)/256
+	//.BRIGHTNESS_PARAM	(bright_value)		//(0,256)/127
+)
+u_VIP_RGB_Contrast_Brightness_Adj
+(
+	//global clock
+	.clk				(clk),  				//100MHz
+	.rst_n				(rst_n),				//global reset
+
+	//Gray data prepred to be processd
+	.per_frame_vsync	(post_frame_vsync_r2),	//Prepared Image data vsync valid signal
+	.per_frame_href		(post_frame_href_r2),		//Prepared Image data href vaild  signal
+	.per_frame_clken	(post_frame_clken_r2),	//Prepared Image data output/capture enable clock
+	.per_img_red		(post_img_Radj1),			//Prepared Image red data input
+	.per_img_green		(post_img_Gadj1),		//Prepared Image green data input
+	.per_img_blue		(post_img_Badj1),			//Prepared Image blue data input	
+
+	//Detected gray image's mean value
+	.per_Ymean_update	(post_Ymean_update),	//Processed Image mean brightness update
+	.per_img_Ymean		(post_img_Ymean),		//Processed Image Sobel bit data output
+	.bright_value		(bright_value),			//Image Brightness
+	
+	//Image data has been processd
+	.post_frame_vsync	(post_frame_vsync),		//Processed Image data vsync valid signal
+	.post_frame_href	(post_frame_href),		//Processed Image data href vaild  signal
+	.post_frame_clken	(post_frame_clken),		//Processed Image data output/capture enable clock
+	.post_img_Radj		(post_img_Radj2),		//Prepared Image red data to be processed
+	.post_img_Gadj		(post_img_Gadj2),		//Prepared Image green data to be processed
+	.post_img_Badj		(post_img_Badj2)			//Prepared Image blue data to be processed
+);
+
+assign	post_frame_data = {post_img_Radj2[7:3], post_img_Gadj2[7:2], post_img_Badj2[7:3]};	//system data input
+
+endmodule
